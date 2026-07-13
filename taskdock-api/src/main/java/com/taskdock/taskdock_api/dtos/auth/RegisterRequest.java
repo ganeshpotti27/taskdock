@@ -10,7 +10,7 @@ public record RegisterRequest(
     @NotBlank(message = "Phone number is required")
         @Pattern(regexp = "\\d{10}", message = "Phone number must contain exactly 10 digits")
         String phoneNumber,
-    @NotBlank(message = "New password is required")
+    @NotBlank(message = "Password is required")
         @Pattern(
             regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@#$%^&+=!]).{8,16}$",
             message =

@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Pattern;
 
 public record LoginRequest(
     @NotBlank(message = "Email is required") @Email(message = "Invalid email") String email,
-    @NotBlank(message = "New password is required")
+    @NotBlank(message = "Password is required")
         @Pattern(
             regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@#$%^&+=!]).{8,16}$",
             message =

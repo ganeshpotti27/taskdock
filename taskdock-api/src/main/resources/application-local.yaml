@@ -1,3 +1,3 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/medblink
+    url: jdbc:postgresql://localhost:5432/taskdock

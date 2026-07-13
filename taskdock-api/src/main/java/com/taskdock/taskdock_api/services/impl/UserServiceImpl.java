@@ -55,6 +55,10 @@ public class UserServiceImpl implements UserService, UserDetailsService {
   private User getCurrentUser() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
+      if (authentication == null || !authentication.isAuthenticated()) {
+          throw new UsernameNotFoundException("No authenticated user found, Login Again!");
+      }
+
     String email = authentication.getName();
 
     return userRepository
