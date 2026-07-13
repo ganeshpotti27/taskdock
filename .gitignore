@@ -1,0 +1,85 @@
+############################
+# OS
+############################
+
+.DS_Store
+Thumbs.db
+
+############################
+# Logs
+############################
+
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+############################
+# Environment
+############################
+
+.env
+.env.*
+*.local
+
+############################
+# Node / React
+############################
+
+node_modules/
+dist/
+dist-ssr/
+coverage/
+
+############################
+# Java / Maven
+############################
+
+target/
+
+############################
+# IntelliJ IDEA
+############################
+
+.idea/
+*.iml
+*.ipr
+*.iws
+
+############################
+# VS Code
+############################
+
+.vscode/*
+!.vscode/extensions.json
+
+############################
+# Eclipse / STS
+############################
+
+.project
+.classpath
+.settings/
+.factorypath
+.springBeans
+.sts4-cache
+.apt_generated
+
+############################
+# NetBeans
+############################
+
+nbproject/private/
+nbbuild/
+nbdist/
+.nb-gradle/
+build/
+
+############################
+# Misc
+############################
+
+HELP.md
