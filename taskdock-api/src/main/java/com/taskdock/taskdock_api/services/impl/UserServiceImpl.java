@@ -3,15 +3,13 @@ package com.taskdock.taskdock_api.services.impl;
 import com.taskdock.taskdock_api.dtos.users.UpdateUserProfileRequest;
 import com.taskdock.taskdock_api.dtos.users.UserProfileResponse;
 import com.taskdock.taskdock_api.entities.User;
-import com.taskdock.taskdock_api.exceptions.ResourceNotFoundException;
 import com.taskdock.taskdock_api.mappers.UserMapper;
 import com.taskdock.taskdock_api.repositories.UserRepository;
+import com.taskdock.taskdock_api.security.JwtAuthUtil;
 import com.taskdock.taskdock_api.services.UserService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -27,9 +25,12 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
   UserMapper userMapper;
 
+  JwtAuthUtil jwtAuthUtil;
+
   @Override
   public UserProfileResponse updateProfile(UpdateUserProfileRequest request) {
-    User user = getCurrentUser();
+
+    User user = jwtAuthUtil.getCurrentUser();
 
     userMapper.updateUserFromRequest(request, user);
 
@@ -40,7 +41,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
   @Override
   public UserProfileResponse getProfile() {
-    return userMapper.toUserProfileResponse(getCurrentUser());
+    return userMapper.toUserProfileResponse(jwtAuthUtil.getCurrentUser());
   }
 
   @Override
@@ -50,21 +51,6 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
   @Override
   public void deleteProfileImage() {}
-
-  // Internal Methods
-  private User getCurrentUser() {
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-      if (authentication == null || !authentication.isAuthenticated()) {
-          throw new UsernameNotFoundException("No authenticated user found, Login Again!");
-      }
-
-    String email = authentication.getName();
-
-    return userRepository
-        .findByEmail(email)
-        .orElseThrow(() -> new ResourceNotFoundException("User not found with email: ", email));
-  }
 
   @Override
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {

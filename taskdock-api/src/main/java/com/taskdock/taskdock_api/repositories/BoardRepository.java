@@ -17,5 +17,7 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
 
   List<Board> findAllByOwnerAndDeletedFalse(User owner);
 
+  Optional<Board> findByIdAndDeletedFalse(Long boardId);
+
   Optional<Board> findByIdAndOwnerAndDeletedFalse(Long boardId, User owner);
 }

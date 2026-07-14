@@ -2,21 +2,23 @@ package com.taskdock.taskdock_api.services.impl;
 
 import com.taskdock.taskdock_api.dtos.boards.*;
 import com.taskdock.taskdock_api.entities.Board;
+import com.taskdock.taskdock_api.entities.BoardMember;
 import com.taskdock.taskdock_api.entities.User;
 import com.taskdock.taskdock_api.enums.BoardColor;
+import com.taskdock.taskdock_api.enums.BoardRole;
 import com.taskdock.taskdock_api.exceptions.BadRequestException;
 import com.taskdock.taskdock_api.exceptions.ResourceNotFoundException;
 import com.taskdock.taskdock_api.mappers.BoardMapper;
+import com.taskdock.taskdock_api.repositories.BoardMemberRepository;
 import com.taskdock.taskdock_api.repositories.BoardRepository;
 import com.taskdock.taskdock_api.repositories.UserRepository;
+import com.taskdock.taskdock_api.security.JwtAuthUtil;
 import com.taskdock.taskdock_api.services.BoardService;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -25,13 +27,15 @@ import org.springframework.stereotype.Service;
 public class BoardServiceImpl implements BoardService {
 
   BoardRepository boardRepository;
+  BoardMemberRepository boardMemberRepository;
   UserRepository userRepository;
   BoardMapper boardMapper;
+  JwtAuthUtil jwtAuthUtil;
 
   @Override
   public BoardResponse createBoard(CreateBoardRequest request) {
 
-    User currentUser = getCurrentUser();
+    User currentUser = jwtAuthUtil.getCurrentUser();
 
     long ownedBoards = boardRepository.countByOwnerAndDeletedFalse(currentUser);
 
@@ -50,13 +54,19 @@ public class BoardServiceImpl implements BoardService {
 
     board = boardRepository.save(board);
 
+    BoardMember ownerMember =
+        BoardMember.builder().board(board).user(currentUser).role(BoardRole.OWNER).build();
+
+    boardMemberRepository.save(ownerMember);
+
     return boardMapper.toBoardResponse(board);
   }
 
   @Override
+  @PreAuthorize("@security.canEditBoard(#boardId)")
   public BoardResponse updateBoard(Long boardId, UpdateBoardRequest request) {
 
-    User currentUser = getCurrentUser();
+    User currentUser = jwtAuthUtil.getCurrentUser();
 
     Board board = getOwnedBoard(boardId);
 
@@ -75,27 +85,40 @@ public class BoardServiceImpl implements BoardService {
   }
 
   @Override
+  @PreAuthorize("@security.canViewBoard(#boardId)")
   public BoardResponse getBoard(Long boardId) {
 
-    return boardMapper.toBoardResponse(getOwnedBoard(boardId));
+    return boardMapper.toBoardResponse(getAccessibleBoard(boardId));
   }
 
   @Override
   public BoardListResponse getAccessibleBoards() {
 
-    User currentUser = getCurrentUser();
+    User currentUser = jwtAuthUtil.getCurrentUser();
 
-    List<Board> boards = boardRepository.findAllByOwnerAndDeletedFalse(currentUser);
+    List<Board> ownedBoards = boardRepository.findAllByOwnerAndDeletedFalse(currentUser);
 
-    // todo: update to accessible boards
-    long ownedBoards = boardRepository.countByOwnerAndDeletedFalse(currentUser);
+    List<BoardMember> memberships = boardMemberRepository.findAllByUser(currentUser);
 
-    List<BoardResponse> boardResponses = boardMapper.toBoardResponses(boards);
+    Map<Long, Board> accessibleBoards = new LinkedHashMap<>();
 
-    return new BoardListResponse(boardResponses, boardResponses.size(), 3, ownedBoards < 3);
+    ownedBoards.forEach(board -> accessibleBoards.put(board.getId(), board));
+
+    memberships.stream()
+        .map(BoardMember::getBoard)
+        .filter(board -> !board.isDeleted())
+        .forEach(board -> accessibleBoards.putIfAbsent(board.getId(), board));
+
+    long ownedCount = boardRepository.countByOwnerAndDeletedFalse(currentUser);
+
+    List<BoardResponse> responses =
+        boardMapper.toBoardResponses(new ArrayList<>(accessibleBoards.values()));
+
+    return new BoardListResponse(responses, responses.size(), 3, ownedCount < 3);
   }
 
   @Override
+  @PreAuthorize("@security.canDeleteBoard(#boardId)")
   public void softDeleteBoard(Long boardId) {
 
     Board board = getOwnedBoard(boardId);
@@ -113,28 +136,21 @@ public class BoardServiceImpl implements BoardService {
         .toList();
   }
 
-  // ==========================================================
-  // Private Helper Methods
-  // ==========================================================
+  private Board getAccessibleBoard(Long boardId) {
+
+    return boardRepository
+        .findByIdAndDeletedFalse(boardId)
+        .orElseThrow(
+            () -> new ResourceNotFoundException("Board not found with id: ", boardId.toString()));
+  }
 
   private Board getOwnedBoard(Long boardId) {
 
-    User currentUser = getCurrentUser();
+    User currentUser = jwtAuthUtil.getCurrentUser();
 
     return boardRepository
         .findByIdAndOwnerAndDeletedFalse(boardId, currentUser)
         .orElseThrow(
             () -> new ResourceNotFoundException("Board not found with id: ", boardId.toString()));
-  }
-
-  private User getCurrentUser() {
-
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-    String email = authentication.getName();
-
-    return userRepository
-        .findByEmail(email)
-        .orElseThrow(() -> new ResourceNotFoundException("User not found with email: ", email));
   }
 }
