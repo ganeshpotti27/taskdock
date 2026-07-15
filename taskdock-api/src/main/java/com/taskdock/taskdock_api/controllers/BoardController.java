@@ -43,7 +43,7 @@ public class BoardController {
   }
 
   @GetMapping
-  public ResponseEntity<BoardListResponse> getMyBoards() {
+  public ResponseEntity<BoardsResponse> getMyBoards() {
     return ResponseEntity.ok(boardService.getAccessibleBoards());
   }
 

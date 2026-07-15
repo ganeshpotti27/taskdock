@@ -92,7 +92,7 @@ public class BoardServiceImpl implements BoardService {
   }
 
   @Override
-  public BoardListResponse getAccessibleBoards() {
+  public BoardsResponse getAccessibleBoards() {
 
     User currentUser = jwtAuthUtil.getCurrentUser();
 
@@ -114,7 +114,7 @@ public class BoardServiceImpl implements BoardService {
     List<BoardResponse> responses =
         boardMapper.toBoardResponses(new ArrayList<>(accessibleBoards.values()));
 
-    return new BoardListResponse(responses, responses.size(), 3, ownedCount < 3);
+    return new BoardsResponse(responses, responses.size(), 3, ownedCount < 3);
   }
 
   @Override

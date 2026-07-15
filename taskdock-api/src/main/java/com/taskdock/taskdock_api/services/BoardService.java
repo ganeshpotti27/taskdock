@@ -1,8 +1,8 @@
 package com.taskdock.taskdock_api.services;
 
 import com.taskdock.taskdock_api.dtos.boards.BoardColorResponse;
-import com.taskdock.taskdock_api.dtos.boards.BoardListResponse;
 import com.taskdock.taskdock_api.dtos.boards.BoardResponse;
+import com.taskdock.taskdock_api.dtos.boards.BoardsResponse;
 import com.taskdock.taskdock_api.dtos.boards.CreateBoardRequest;
 import com.taskdock.taskdock_api.dtos.boards.UpdateBoardRequest;
 import java.util.List;
@@ -19,7 +19,7 @@ public interface BoardService {
   BoardResponse getBoard(Long boardId);
 
   /** Returns all active boards owned by the current user. */
-  BoardListResponse getAccessibleBoards();
+  BoardsResponse getAccessibleBoards();
 
   /** Soft deletes a board. */
   void softDeleteBoard(Long boardId);
