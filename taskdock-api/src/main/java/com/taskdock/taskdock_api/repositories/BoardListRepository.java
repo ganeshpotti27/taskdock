@@ -35,4 +35,6 @@ public interface BoardListRepository extends JpaRepository<BoardList, Long> {
   long countByBoard(Board board);
 
   long countByBoardAndArchivedFalse(Board board);
+
+  Optional<BoardList> findFirstByBoardAndArchivedFalseOrderByPositionAsc(Board board);
 }
