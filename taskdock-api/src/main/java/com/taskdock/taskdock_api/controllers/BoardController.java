@@ -51,4 +51,10 @@ public class BoardController {
   public ResponseEntity<List<BoardColorResponse>> getColors() {
     return ResponseEntity.ok(boardService.getColors());
   }
+
+  @GetMapping("/{boardId}/view")
+  public ResponseEntity<BoardViewResponse> getBoardView(@PathVariable Long boardId) {
+
+    return ResponseEntity.ok(boardService.getBoardView(boardId));
+  }
 }

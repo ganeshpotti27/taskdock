@@ -1,6 +1,9 @@
 package com.taskdock.taskdock_api.services.impl;
 
+import com.taskdock.taskdock_api.dtos.boardlists.BoardListsResponse;
 import com.taskdock.taskdock_api.dtos.boards.*;
+import com.taskdock.taskdock_api.dtos.members.MemberListResponse;
+import com.taskdock.taskdock_api.dtos.tasks.TaskListResponse;
 import com.taskdock.taskdock_api.entities.Board;
 import com.taskdock.taskdock_api.entities.BoardMember;
 import com.taskdock.taskdock_api.entities.User;
@@ -11,9 +14,11 @@ import com.taskdock.taskdock_api.exceptions.ResourceNotFoundException;
 import com.taskdock.taskdock_api.mappers.BoardMapper;
 import com.taskdock.taskdock_api.repositories.BoardMemberRepository;
 import com.taskdock.taskdock_api.repositories.BoardRepository;
-import com.taskdock.taskdock_api.repositories.UserRepository;
 import com.taskdock.taskdock_api.security.JwtAuthUtil;
+import com.taskdock.taskdock_api.services.BoardListService;
+import com.taskdock.taskdock_api.services.BoardMemberService;
 import com.taskdock.taskdock_api.services.BoardService;
+import com.taskdock.taskdock_api.services.TaskService;
 import java.util.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +33,9 @@ public class BoardServiceImpl implements BoardService {
 
   BoardRepository boardRepository;
   BoardMemberRepository boardMemberRepository;
-  UserRepository userRepository;
+  BoardMemberService boardMemberService;
+  TaskService taskService;
+  BoardListService boardListService;
   BoardMapper boardMapper;
   JwtAuthUtil jwtAuthUtil;
 
@@ -134,6 +141,34 @@ public class BoardServiceImpl implements BoardService {
     return Arrays.stream(BoardColor.values())
         .map(color -> new BoardColorResponse(color.name(), color.getHexCode()))
         .toList();
+  }
+
+  @Override
+  @PreAuthorize("@security.canViewBoard(#boardId)")
+  public BoardViewResponse getBoardView(Long boardId) {
+
+    // Get board details
+    BoardResponse board = getBoard(boardId);
+
+    // Get board members
+    MemberListResponse members = boardMemberService.getBoardMembers(boardId);
+
+    // Get active lists
+    BoardListsResponse activeLists = boardListService.getActiveLists(boardId);
+
+    // Build lists with tasks
+    List<BoardListWithTasksResponse> lists =
+        activeLists.lists().stream()
+            .map(
+                list -> {
+                  TaskListResponse tasks = taskService.getTasksByBoardList(boardId, list.id());
+
+                  return new BoardListWithTasksResponse(
+                      list.id(), list.name(), list.position(), list.archived(), tasks.tasks());
+                })
+            .toList();
+
+    return new BoardViewResponse(board, members, lists);
   }
 
   private Board getAccessibleBoard(Long boardId) {

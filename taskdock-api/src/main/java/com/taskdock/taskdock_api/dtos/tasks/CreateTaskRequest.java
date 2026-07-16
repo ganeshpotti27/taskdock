@@ -8,9 +8,10 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
 
 public record CreateTaskRequest(
-    @NotBlank @Size(min = 2, max = 200) String title,
+    @NotBlank(message = "Task title is required.") @Size(min = 2, max = 200) String title,
     @Size(max = 5000) String description,
     TaskPriority priority,
     @NotNull(message = "Due date is required.") @Future(message = "Due date must be in the future.")
         LocalDateTime dueDate,
-    Long assigneeId) {}
+    Long assigneeId,
+    @NotNull(message = "Board list is required.") Long boardListId) {}
