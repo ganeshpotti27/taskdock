@@ -40,13 +40,7 @@ public class TaskServiceImpl implements TaskService {
 
     Board board = getBoard(boardId);
 
-    BoardList boardList =
-        boardListRepository
-            .findFirstByBoardAndArchivedFalseOrderByPositionAsc(board)
-            .orElseThrow(
-                () ->
-                    new ResourceNotFoundException(
-                        "No active board list found in board: ", boardId.toString()));
+    BoardList boardList = getActiveBoardList(board, request.boardListId());
 
     Task task = taskMapper.toEntity(request);
 
@@ -54,25 +48,13 @@ public class TaskServiceImpl implements TaskService {
 
     task.setCreatedBy(jwtAuthUtil.getCurrentUser());
 
-    if (request.assigneeId() != null) {
-      task.setAssignee(validateAssignee(board, request.assigneeId()));
-    } else {
-      task.setAssignee(board.getOwner());
-    }
+    task.setAssignee(resolveAssignee(board, request.assigneeId()));
 
-    if (request.priority() != null) {
-      task.setPriority(request.priority());
-    } else {
-      task.setPriority(TaskPriority.MEDIUM);
-    }
+    task.setPriority(request.priority() != null ? request.priority() : TaskPriority.MEDIUM);
 
-    Integer maxPosition = taskRepository.findMaxPosition(boardList);
+    task.setPosition(getNextTaskPosition(boardList));
 
-    task.setPosition(maxPosition + 1);
-
-    task = taskRepository.save(task);
-
-    return taskMapper.toTaskResponse(task);
+    return taskMapper.toTaskResponse(taskRepository.save(task));
   }
 
   @Override
@@ -116,10 +98,7 @@ public class TaskServiceImpl implements TaskService {
     if (request.assigneeId() != null) {
       task.setAssignee(validateAssignee(board, request.assigneeId()));
     }
-
-    task = taskRepository.save(task);
-
-    return taskMapper.toTaskResponse(task);
+    return taskMapper.toTaskResponse(taskRepository.save(task));
   }
 
   @Override
@@ -147,20 +126,10 @@ public class TaskServiceImpl implements TaskService {
 
     BoardList sourceList = task.getBoardList();
 
-    BoardList destinationList =
-        boardListRepository
-            .findByIdAndBoard(request.destinationListId(), board)
-            .orElseThrow(
-                () ->
-                    new ResourceNotFoundException(
-                        "Board list not found with id: ", request.destinationListId().toString()));
+    BoardList destinationList = getActiveBoardList(board, request.destinationListId());
 
     if (sourceList.getId().equals(destinationList.getId())) {
       return;
-    }
-
-    if (destinationList.isArchived()) {
-      throw new BadRequestException("Tasks cannot be moved to an archived list.");
     }
 
     int oldPosition = task.getPosition();
@@ -168,13 +137,18 @@ public class TaskServiceImpl implements TaskService {
     // Remove gap from source list
     compactTaskPositions(sourceList, oldPosition);
 
-    // Append to destination list
-    Integer maxPosition = taskRepository.findMaxPosition(destinationList);
-
     task.setBoardList(destinationList);
-    task.setPosition(maxPosition + 1);
+    task.setPosition(getNextTaskPosition(destinationList));
 
     taskRepository.save(task);
+  }
+
+  private User resolveAssignee(Board board, Long assigneeId) {
+    if (assigneeId == null) {
+      return board.getOwner();
+    }
+
+    return validateAssignee(board, assigneeId);
   }
 
   private Board getBoard(Long boardId) {
@@ -201,6 +175,13 @@ public class TaskServiceImpl implements TaskService {
             () -> new ResourceNotFoundException("User not found with id: ", userId.toString()));
   }
 
+  private int getNextTaskPosition(BoardList boardList) {
+
+    return java.util.Optional.ofNullable(taskRepository.findMaxPosition(boardList))
+        .map(position -> position + 1)
+        .orElse(1);
+  }
+
   /** Closes the position gap after a task is deleted or moved. */
   private void compactTaskPositions(BoardList boardList, int deletedPosition) {
 
@@ -213,6 +194,27 @@ public class TaskServiceImpl implements TaskService {
     }
 
     taskRepository.saveAll(tasks);
+  }
+
+  private BoardList getActiveBoardList(Board board, Long listId) {
+
+    if (listId == null) {
+      throw new BadRequestException("Board list is required.");
+    }
+
+    BoardList boardList =
+        boardListRepository
+            .findByIdAndBoard(listId, board)
+            .orElseThrow(
+                () ->
+                    new ResourceNotFoundException(
+                        "Board list not found with id: ", listId.toString()));
+
+    if (boardList.isArchived()) {
+      throw new BadRequestException("Board list is archived.");
+    }
+
+    return boardList;
   }
 
   private User validateAssignee(Board board, Long assigneeId) {

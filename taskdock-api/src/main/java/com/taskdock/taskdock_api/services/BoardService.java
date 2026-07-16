@@ -1,10 +1,6 @@
 package com.taskdock.taskdock_api.services;
 
-import com.taskdock.taskdock_api.dtos.boards.BoardColorResponse;
-import com.taskdock.taskdock_api.dtos.boards.BoardResponse;
-import com.taskdock.taskdock_api.dtos.boards.BoardsResponse;
-import com.taskdock.taskdock_api.dtos.boards.CreateBoardRequest;
-import com.taskdock.taskdock_api.dtos.boards.UpdateBoardRequest;
+import com.taskdock.taskdock_api.dtos.boards.*;
 import java.util.List;
 
 public interface BoardService {
@@ -26,4 +22,6 @@ public interface BoardService {
 
   /** Returns all available board colors. */
   List<BoardColorResponse> getColors();
+
+  BoardViewResponse getBoardView(Long boardId);
 }
