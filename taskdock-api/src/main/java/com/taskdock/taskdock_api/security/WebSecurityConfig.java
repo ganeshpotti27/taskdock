@@ -15,7 +15,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
@@ -32,6 +31,7 @@ public class WebSecurityConfig {
   UserDetailsService userDetailsService;
   JwtAuthFilter jwtAuthFilter;
   HandlerExceptionResolver handlerExceptionResolver;
+  PasswordEncoder passwordEncoder;
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -73,25 +73,20 @@ public class WebSecurityConfig {
   }
 
   @Bean
-  public AuthenticationEntryPoint authenticationEntryPoint() {
-
-    return (request, response, exception) ->
-        handlerExceptionResolver.resolveException(request, response, null, exception);
-  }
-
-  @Bean
-  public PasswordEncoder passwordEncoder() {
-    return new BCryptPasswordEncoder();
-  }
-
-  @Bean
   public AuthenticationProvider authenticationProvider() {
 
     DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
 
-    provider.setPasswordEncoder(passwordEncoder());
+    provider.setPasswordEncoder(passwordEncoder);
 
     return provider;
+  }
+
+  @Bean
+  public AuthenticationEntryPoint authenticationEntryPoint() {
+
+    return (request, response, exception) ->
+        handlerExceptionResolver.resolveException(request, response, null, exception);
   }
 
   @Bean
