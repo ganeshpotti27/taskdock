@@ -26,3 +26,8 @@ spring:
 jwt:
   secret-key: ouhwfrouhjwf0yuhoqr3huy9wfrouhowfy9hwrfouhwefi9nF2
   expiration: 86400000
+
+cloudinary:
+  cloud-name: ekix2wft
+  api-key: 781118221552213
+  api-secret: uEBgyIG7Ax6dtwFhY6RU-ptJ-vI

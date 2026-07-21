@@ -1,5 +1,6 @@
 package com.taskdock.taskdock_api.services;
 
+import com.taskdock.taskdock_api.dtos.users.ChangePasswordRequest;
 import com.taskdock.taskdock_api.dtos.users.UpdateUserProfileRequest;
 import com.taskdock.taskdock_api.dtos.users.UserProfileResponse;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,6 +15,8 @@ public interface UserService {
   UserProfileResponse updateProfileImage(MultipartFile file);
 
   void deleteProfileImage();
+
+  void changePassword(ChangePasswordRequest request);
 
   UserDetails loadUserByUsername(String username);
 }

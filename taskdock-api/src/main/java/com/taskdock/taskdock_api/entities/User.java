@@ -55,6 +55,8 @@ public class User extends BaseEntity implements UserDetails {
   @Column(length = 500)
   String profileImageUrl;
 
+  @Column String profileImagePublicId;
+
   @Column Instant lastLoginAt;
 
   @Override
